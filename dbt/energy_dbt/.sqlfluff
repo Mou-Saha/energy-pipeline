@@ -1,0 +1,8 @@
+[sqlfluff]
+dialect = postgres
+templater = dbt
+runaway_limit = 10
+max_line_length = 120
+
+[sqlfluff:templater:dbt]
+project_dir = .

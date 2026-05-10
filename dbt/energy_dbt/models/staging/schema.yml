@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_energy_consumption
+    description: "Staged hourly energy consumption data from OPSD"
+    columns:
+      - name: measured_at
+        description: "UTC timestamp of the measurement"
+        tests:
+          - not_null
+      - name: country_code
+        description: "Country identifier"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["DE", "FR", "GB"]
+      - name: consumption_mw
+        description: "Energy consumption in megawatts"
+        tests:
+          - not_null

@@ -1,0 +1,88 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  dbt-ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: airflow
+          POSTGRES_PASSWORD: airflow
+          POSTGRES_DB: airflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install dbt-postgres psycopg2-binary sqlfluff sqlfluff-templater-dbt
+
+      - name: Create raw schema and table
+        env:
+          PGPASSWORD: airflow
+        run: |
+          psql -h localhost -U airflow -d airflow -c "CREATE SCHEMA IF NOT EXISTS raw;"
+          psql -h localhost -U airflow -d airflow -c "
+            CREATE TABLE IF NOT EXISTS raw.energy_consumption (
+              id SERIAL PRIMARY KEY,
+              utc_timestamp TIMESTAMP NOT NULL,
+              country VARCHAR(10) NOT NULL,
+              consumption_mw FLOAT,
+              loaded_at TIMESTAMP DEFAULT NOW(),
+              UNIQUE(utc_timestamp, country)
+            );"
+
+      - name: Create dbt profiles
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'EOF'
+          energy_dbt:
+            target: ci
+            outputs:
+              ci:
+                type: postgres
+                host: localhost
+                port: 5432
+                dbname: airflow
+                user: airflow
+                password: airflow
+                schema: dbt_ci
+                threads: 4
+          EOF
+
+      - name: Run dbt deps
+        working-directory: dbt/energy_dbt
+        run: dbt deps
+
+      - name: Run dbt run
+        working-directory: dbt/energy_dbt
+        run: dbt run
+
+      - name: Run dbt test
+        working-directory: dbt/energy_dbt
+        run: dbt test
+
+      - name: Run sqlfluff lint
+        working-directory: dbt/energy_dbt
+        run: sqlfluff lint models/ --dialect postgres

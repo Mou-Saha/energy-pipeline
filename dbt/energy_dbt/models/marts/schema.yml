@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: mart_daily_consumption
+    description: "Daily energy consumption aggregates by country"
+    columns:
+      - name: measured_date
+        tests:
+          - not_null
+      - name: country_code
+        tests:
+          - not_null
+      - name: avg_consumption_mw
+        tests:
+          - not_null

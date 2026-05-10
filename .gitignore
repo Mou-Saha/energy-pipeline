@@ -6,3 +6,6 @@ __pycache__/
 *.tfstate.backup
 airflow/logs/
 .venv/
+dbt/energy_dbt/profiles.yml
+dbt/logs/
+logs/
