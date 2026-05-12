@@ -9,3 +9,4 @@ airflow/logs/
 dbt/energy_dbt/profiles.yml
 dbt/logs/
 logs/
+terraform/terraform.tfvars
